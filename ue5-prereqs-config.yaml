@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://aka.ms/configuration-dsc-schema/0.2
+#
+# UE5 Build Prerequisites — WinGet Configuration
+#
+# Usage:
+#   winget configure test -f ue5-prereqs.winget.yaml   # CHECK ONLY — reports what's
+#                                                        missing, installs nothing
+#   winget configure -f ue5-prereqs.winget.yaml         # APPLY — installs anything
+#                                                        missing (idempotent; already-
+#                                                        installed items are skipped)
+#   winget configure show -f ue5-prereqs.winget.yaml    # preview resolved settings
+#
+# Requires: Windows 10/11, App Installer (winget) 1.6+, run from an elevated
+# (Administrator) terminal for the Visual Studio component step.
+
+properties:
+  configurationVersion: 0.2.0
+
+  assertions:
+    - resource: Microsoft.Windows.Setting/WindowsBuild  # sanity check only
+      directives:
+        description: Confirm running on a supported Windows build
+        allowPrerelease: true
+      settings:
+        MinVersion: '10.0.18362'
+
+  resources:
+
+    # --- 1. Visual Studio 2022 (Community edition) --------------------------
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: visualStudio
+      directives:
+        description: Install Visual Studio 2022 Community
+        allowPrerelease: true
+      settings:
+        id: Microsoft.VisualStudio.2022.Community
+        source: winget
+
+    # --- 2. Required VS workloads & components for UE5 C++ compilation ------
+    - resource: Microsoft.VisualStudio.DSC/VSComponents
+      id: vsComponents
+      dependsOn:
+        - visualStudio
+      directives:
+        description: Install VS workloads/components required to build UE5
+        allowPrerelease: true
+      settings:
+        productId: Microsoft.VisualStudio.Product.Community
+        # Professional: Microsoft.VisualStudio.Product.Professional
+        # Enterprise:   Microsoft.VisualStudio.Product.Enterprise
+        channelId: VisualStudio.17.Release
+        components:
+          - Microsoft.VisualStudio.Workload.ManagedDesktop      # .NET desktop development
+          - Microsoft.VisualStudio.Workload.NativeDesktop       # Desktop development with C++
+          - Microsoft.VisualStudio.Workload.NativeGame          # Game development with C++
+          - Microsoft.VisualStudio.Workload.NetCrossPlat        # .NET Multi-platform App UI development
+          - Microsoft.VisualStudio.Component.VC.Tools.x86.x64   # MSVC v143 - VS 2022 C++ x64/x86 build tools
+          - Microsoft.VisualStudio.Component.Windows11SDK.22621 # Windows 11 SDK
+          - Microsoft.VisualStudio.Component.Windows10SDK.19041 # Windows 10 SDK
+        includeRecommended: true
+
+    # --- 3. .NET SDK (Unreal Build Tool / UnrealBuildTool runs on .NET) -----
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: dotnetSdk
+      directives:
+        description: Install .NET 8 SDK (required by Unreal Build Tool)
+        allowPrerelease: true
+      settings:
+        id: Microsoft.DotNet.SDK.8
+        source: winget
+
+    # --- 4. Git ---------
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: git
+      directives:
+        description: Install Git
+        allowPrerelease: true
+      settings:
+        id: Git.Git
+        source: winget
