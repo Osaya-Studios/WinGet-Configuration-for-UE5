@@ -22,7 +22,7 @@ properties:
         description: Confirm running on a supported Windows build
         allowPrerelease: true
       settings:
-        MinVersion: '10.0.18362'
+        MinVersion: '10.0.17763'
 
   resources:
 
